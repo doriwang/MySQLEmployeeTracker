@@ -29,11 +29,15 @@ function initSearch() {
             name: "action",
             type: "list",
             message: "What would you like to do?",
-            choices: ["View Database", "Add New Data", "Update Exist Data"],
+            choices: ["View All", "View By Category", "Add New Data", "Update Existing Data"],
         })
         .then((answer) => {
             switch (answer.action) {
-                case "View Database":
+                case "View All":
+                    viewAll();
+                    break;
+
+                case "View By Category":
                     viewByCategory();
                     break;
 
@@ -41,31 +45,31 @@ function initSearch() {
                     addNewData();
                     break;
 
-                case "Update Exist Data":
+                case "Update Existing Data":
                     updateData();
                     break;
             }
         });
 }
 
-// function viewAllEmployees() {
-//     var query = "SELECT employee.id, first_name, last_name, title, department, salary, manager FROM employee LEFT JOIN role ON employee.id = role.id LEFT JOIN department ON department.id = role.department_id;";
+function viewAll() {
+    var query = "SELECT employee.id, first_name, last_name, title, salary, department FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON department.id = role.department_id;";
 
-//     connection.query(query, function (err, res) {
-//         if (err) {
-//             console.log(err)
-//         }
-//         console.table('\n', res)
-//         viewByCategory()
-//     })
-// };
+    connection.query(query, function (err, res) {
+        if (err) {
+            console.log(err)
+        }
+        console.table('\n', res)
+        initSearch()
+    })
+};
 
 function viewByCategory() {
     inquirer
         .prompt({
             name: "action",
             type: "list",
-            message: "What would you like to view?",
+            message: "What would you like to view by?",
             choices: ["Departments", "Roles", "Employees"],
         })
         .then((answer) => {
@@ -209,7 +213,6 @@ function addRole() {
                 );
                 console.log("Added New Role");
                 rolesArry.push(role);
-                console.log(departmentsArry, rolesArry);
                 initSearch();
             }
         });
@@ -279,21 +282,44 @@ function updateData() {
             type: "list",
             message: "Which employee's role would you like to update?",
             choices: employeesArry
+        }, {
+            name: "role",
+            type: "list",
+            message: "What is the employee's new role?",
+            choices: rolesArry
         }
     ]).then((answer) => {
+        var name = answer.employee
+        changeRole(name, answer)
+        initSearch()
+    })
+};
 
-        // switch (answer.action) {
-        //     case "Employee Department":
-        //         updateDepartment();
-        //         break;
-
-        //     case "Employee Role":
-        //     updateRole();
-        //         break;
-
-        //     case "Employee Name":
-        //         update();
-        //         break;
-        // }
-    });
+function changeRole(name, answer) {
+    var first_name = name.split(" ")[0]
+    var last_name = name.split(" ")[1]
+    var query = "UPDATE employee SET ? WHERE ? AND ?"
+    var roleId = 0
+    for (var i = 0; i < rolesArry.length; i++) {
+        roleId += 1
+        switch (answer.role) {
+            case rolesArry[i]:
+                connection.query(query, [{
+                            role_id: roleId,
+                        },
+                        {
+                            first_name: first_name
+                        }, {
+                            last_name: last_name
+                        }
+                    ],
+                    function (err, res) {
+                        if (err) {
+                            console.log(err);
+                        }
+                    }
+                )
+                break;
+        }
+    }
 }
